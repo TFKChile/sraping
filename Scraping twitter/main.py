@@ -1,3 +1,4 @@
+import csv
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
@@ -63,8 +64,11 @@ try:
     if not comments:
         print("No se encontraron comentarios con el selector actual.")
     else:
-        for comment in comments:
-            print(comment.text + "\n")
+        with open('comentarios.csv', 'a', newline='', encoding='utf-8') as csvfile:
+            csvwriter = csv.writer(csvfile)
+            for comment in comments:
+                csvwriter.writerow([comment.text])
+                print(comment.text + "\n")
 except Exception as e:
     print(f"Error al extraer comentarios: {e}")
 
