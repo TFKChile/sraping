@@ -57,11 +57,14 @@ for _ in range(10):  # Ajusta el rango según la cantidad de comentarios
 
 # Extraer los comentarios
 try:
-    comments = driver.find_elements(By.CSS_SELECTOR, 'div[data-testid="reply"] div[lang]')
-    with open("comentarios.txt", "w", encoding="utf-8") as file:
+    # Buscar los comentarios dentro del contenedor
+    comments = driver.find_elements(By.CSS_SELECTOR, 'div[data-testid="tweetText"]')
+    
+    if not comments:
+        print("No se encontraron comentarios con el selector actual.")
+    else:
         for comment in comments:
-            file.write(comment.text + "\n\n")
-    print("Comentarios guardados en 'comentarios.txt'.")
+            print(comment.text + "\n")
 except Exception as e:
     print(f"Error al extraer comentarios: {e}")
 
