@@ -25,10 +25,10 @@ def start_scraping(tweet_url):
     if os.path.exists(cookies_path):
         # Cargar las cookies y navegar a la URL del tweet
         driver.get('https://twitter.com')
-        time.sleep(5)  # Esperar a que la página de Twitter se cargue
+        time.sleep(3)  # Esperar a que la página de Twitter se cargue
         load_cookies(driver, cookies_path)
         driver.refresh()
-        time.sleep(5)  # Esperar a que la página se recargue con las cookies
+        time.sleep(3)  # Esperar a que la página se recargue con las cookies
     else:
         # Iniciar sesión y guardar cookies
         login_twitter(driver, username, password)
