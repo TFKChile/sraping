@@ -5,26 +5,10 @@ from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException
 
 # Iniciar sesión en Twitter
-def login_twitter(driver, username, password):
-    driver.get('https://twitter.com/login')
-    time.sleep(3)  # Esperar a que la página de inicio de sesión se cargue
-
-    try:
-        username_field = driver.find_element(By.NAME, 'text')
-        username_field.send_keys(username)
-        username_field.send_keys(Keys.RETURN)
-        time.sleep(3)
-
-        password_field = driver.find_element(By.NAME, 'password')
-        password_field.send_keys(password)
-        password_field.send_keys(Keys.RETURN)
-        
-        time.sleep(3)  # Esperar a que el inicio de sesión se complete
-    except Exception as e:
-        print(f"Error al iniciar sesión: {e}")
-        driver.quit()
-        exit()
-
+def login_twitter(driver, login_url):
+    driver.get(login_url)
+    print("Por favor, inicia sesión manualmente en Twitter.")
+    time.sleep(150)  
 # Navegar al tweet y extraer comentarios
 def Extraer_Comentarios(driver, tweet_url, output_file):
     try:

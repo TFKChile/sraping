@@ -6,9 +6,6 @@ import os
 from cookies import save_cookies, load_cookies
 from twitter_scraper import login_twitter, Extraer_Comentarios
 
-# Credenciales de Twitter
-username = ''  # Usuario de Twitter
-password = ''  # Contraseña de Twitter
 
 # Ruta para almacenar las cookies
 cookies_path = 'twitter_cookies.pkl'
@@ -30,8 +27,8 @@ def start_scraping(tweet_url):
         driver.refresh()
         time.sleep(3)  # Esperar a que la página se recargue con las cookies
     else:
-        # Iniciar sesión y guardar cookies
-        login_twitter(driver, username, password)
+        # Iniciar sesión manualmente y guardar cookies
+        login_twitter(driver, 'https://twitter.com/login')
         save_cookies(driver, cookies_path)
 
     # Extraer comentarios del tweet
