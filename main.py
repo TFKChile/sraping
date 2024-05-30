@@ -27,7 +27,7 @@ def start_scraping(tweet_url):
         driver.refresh()
         time.sleep(3)  # Esperar a que la página se recargue con las cookies
     else:
-        # Iniciar sesión manualmente y guardar cookies
+        # Iniciar sesión y guardar cookies
         login_twitter(driver, 'https://twitter.com/login')
         save_cookies(driver, cookies_path)
 

@@ -19,19 +19,26 @@ def Extraer_Comentarios(driver, tweet_url, output_file):
         driver.quit()
         exit()
 
-    # Intentar hacer clic en el botón "Mostrar más comentarios" varias veces
-    while True:
-        try:
-            show_more_button = driver.find_element(By.XPATH, '//button[@role="button" and .//span[contains(text(), "Mostrar más respuestas")]]')
-            driver.execute_script("arguments[0].click();", show_more_button)
-            time.sleep(3)  # Esperar a que se carguen los comentarios adicionales
-        except NoSuchElementException:
-            break
-
     body = driver.find_element(By.TAG_NAME, 'body')
-    for _ in range(10):  # Ajusta el rango según la cantidad de comentarios
+    last_height = driver.execute_script("return document.body.scrollHeight")
+    last_comment_count = 0
+    max_attempts = 3  # Número máximo de intentos sin cambios
+    attempts = 0
+
+    while attempts < max_attempts:
         body.send_keys(Keys.PAGE_DOWN)
         time.sleep(2)
+
+        new_height = driver.execute_script("return document.body.scrollHeight")
+        comments = driver.find_elements(By.CSS_SELECTOR, 'div[data-testid="tweetText"]')
+        new_comment_count = len(comments)
+
+        if new_height == last_height and new_comment_count == last_comment_count:
+            attempts += 1
+        else:
+            attempts = 0  # Restablecer el contador si hay cambios
+            last_height = new_height
+            last_comment_count = new_comment_count
 
     # Extraer los comentarios
     try:
