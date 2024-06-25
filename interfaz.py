@@ -8,28 +8,33 @@ def create_gui():
     root = tk.Tk()
     root.title("Twitter Scraper")
 
-    tk.Label(root, text="Link Post del Twitter:").grid(row=0, column=0, padx=10, pady=10)
-    url_entry = tk.Entry(root, width=50)
-    url_entry.grid(row=0, column=1, padx=10, pady=10)
+    tk.Label(root, text="Links de los Posts de Twitter (uno por línea):").grid(row=0, column=0, padx=10, pady=10)
+    url_text = tk.Text(root, height=10, width=50)
+    url_text.grid(row=0, column=1, padx=10, pady=10)
 
-    scrape_button = tk.Button(root, text="Iniciar Scraping", command=lambda: on_scrape_button_click(url_entry, scrape_button, loading_label))
-    scrape_button.grid(row=1, column=0, columnspan=2, pady=10)
+    tk.Label(root, text="Minero:").grid(row=1, column=0, padx=10, pady=10)
+    minero_entry = tk.Entry(root, width=50)
+    minero_entry.grid(row=1, column=1, padx=10, pady=10)
+
+    scrape_button = tk.Button(root, text="Iniciar Scraping", command=lambda: on_scrape_button_click(url_text, minero_entry, scrape_button, loading_label))
+    scrape_button.grid(row=2, column=0, columnspan=2, pady=10)
 
     loading_label = ttk.Label(root, text="", foreground="green")
-    loading_label.grid(row=2, column=0, columnspan=2, pady=10)
+    loading_label.grid(row=3, column=0, columnspan=2, pady=10)
 
-    def on_scrape_button_click(url_entry, scrape_button, loading_label):
-        tweet_url = url_entry.get().strip()
-        if not tweet_url:
-            messagebox.showwarning("Advertencia", "Por favor, ingrese un Link")
+    def on_scrape_button_click(url_text, minero_entry, scrape_button, loading_label):
+        tweet_urls = url_text.get("1.0", tk.END).strip().split('\n')
+        minero = minero_entry.get().strip()
+        if not tweet_urls or not minero:
+            messagebox.showwarning("Advertencia", "Por favor, ingrese los Links y el nombre del Minero")
         else:
             scrape_button.config(state=tk.DISABLED)
             loading_label.config(text="Cargando...")
-            threading.Thread(target=run_scraping, args=(tweet_url, scrape_button, loading_label)).start()
+            threading.Thread(target=run_scraping, args=(tweet_urls, minero, scrape_button, loading_label)).start()
 
-    def run_scraping(tweet_url, scrape_button, loading_label):
+    def run_scraping(tweet_urls, minero, scrape_button, loading_label):
         try:
-            start_scraping(tweet_url)
+            start_scraping(tweet_urls, minero)
             messagebox.showinfo("Éxito", "El scraping se ha completado correctamente.")
         except Exception as e:
             messagebox.showerror("Error", str(e))
@@ -41,3 +46,4 @@ def create_gui():
 
 if __name__ == "__main__":
     create_gui()
+

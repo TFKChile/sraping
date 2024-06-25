@@ -6,11 +6,10 @@ import os
 from cookies import save_cookies, load_cookies
 from twitter_scraper import login_twitter, Extraer_Comentarios
 
-
 # Ruta para almacenar las cookies
 cookies_path = 'twitter_cookies.pkl'
 
-def start_scraping(tweet_url):
+def start_scraping(tweet_urls, minero):
     # Inicializar el ChromeDriver
     try:
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
@@ -27,18 +26,21 @@ def start_scraping(tweet_url):
         driver.refresh()
         time.sleep(3)  # Esperar a que la página se recargue con las cookies
     else:
-        # Iniciar sesión y guardar cookies
+        # Iniciar sesión manualmente y guardar cookies
         login_twitter(driver, 'https://twitter.com/login')
         save_cookies(driver, cookies_path)
 
-    # Extraer comentarios del tweet
-    output_file = 'comentarios.csv'
-    Extraer_Comentarios(driver, tweet_url, output_file)
+    for tweet_url in tweet_urls:
+        tweet_url = tweet_url.strip()
+        if tweet_url:
+            Extraer_Comentarios(driver, tweet_url, minero, id_url=None)
 
-    # Cerrar el navegador
+    # Cerrar el navegador al finalizar el scraping de todos los enlaces
     driver.quit()
     print("El scraping se ha completado correctamente.")
 
 if __name__ == "__main__":
     from interfaz import create_gui
     create_gui()
+
+
