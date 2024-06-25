@@ -70,14 +70,9 @@ def Extraer_Comentarios(driver, tweet_url, minero, id_url=None):
             break
 
     body = driver.find_element(By.TAG_NAME, 'body')
-    last_height = driver.execute_script("return document.body.scrollHeight")
-    while True:
+    for _ in range(40):  # Ajusta el rango según la cantidad de comentarios
         body.send_keys(Keys.PAGE_DOWN)
-        time.sleep(2)  # Esperar un momento para que se carguen los comentarios adicionales
-        new_height = driver.execute_script("return document.body.scrollHeight")
-        if new_height == last_height:
-            break
-        last_height = new_height
+        time.sleep(1)
 
     # Extraer los comentarios
     try:
