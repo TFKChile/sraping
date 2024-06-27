@@ -2,18 +2,13 @@ import time
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException
-from supabase import create_client, Client
 from datetime import datetime
 import sys
-from filter_comments import filter_spanish_comments
+import re
+import csv
+import os
+import unicodedata
 
-# -----CONFIGURACIONES SUPABASE-----
-url = "https://vrdvsuoyecwnqqpjfrzs.supabase.co"
-key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZyZHZzdW95ZWN3bnFxcGpmcnpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTYwOTEzMzcsImV4cCI6MjAzMTY2NzMzN30.0V-0HYbfxjhGJBUEE8DQK0tbyWmCLCMp1NP40AEXShw"
-supabase: Client = create_client(url, key)
-id_url_paracom = -1
-
-# Iniciar sesión en Twitter (esta función no ha cambiado)
 def login_twitter(driver, login_url):
     driver.get(login_url)
     print("Por favor, inicia sesión manualmente en Twitter.")
@@ -21,97 +16,98 @@ def login_twitter(driver, login_url):
 
 def validar_url(linkscrap, minero):
     global id_url_paracom
-    try:
-        # Verificar si la URL ya existe en la base de datos
-        response = supabase.table('URLS').select('ruta').eq('ruta', linkscrap).execute()
-        if response.data:
-            print("La URL ya ha sido scrappeada anteriormente. Cerrando el programa.")
-            sys.exit()
-        else:
-            # Insertar la nueva URL en la base de datos y obtener el ID
-            insert_response = supabase.table('URLS').insert({
-                'ruta': linkscrap,
-                'minero': minero,
-                'fecha_add': datetime.utcnow().isoformat() + 'Z',
-                'red_social': 'X'
-            }).execute()
+    id_url_paracom = 1  # Asignamos un ID ficticio para pruebas locales
+    print(f"Validación simulada de la URL: {linkscrap} con minero: {minero}")
 
-            # Recuperar el ID de la URL insertada
-            if insert_response.data:
-                url_id = insert_response.data[0]['id_url']
-                print(f"La URL ha sido registrada con ID: {url_id}")
-                id_url_paracom = url_id
-            else:
-                print("Error al insertar la URL.")
-                return None
-    except Exception as e:
-        print("Error al validar o insertar la URL:", e)
-        return None
+def clean_text(text):
+    text = unicodedata.normalize('NFKD', text)
+    text = ''.join(c for c in text if unicodedata.category(c) != 'Mn' or c in 'áéíóúñÁÉÍÓÚÑ')
+    text = re.sub(r'[^\w\s@]', '', text)
+    text = re.sub(r'\s+', ' ', text)
+    text = text.replace('\n', ' ')
+    return text
 
-def Extraer_Comentarios(driver, tweet_url, minero, id_url=None):
-    # Validar la URL antes de proceder
+def es_duplicado(user_name, comment_text, comment_date, recorded_comments):
+    comment_id = (user_name, comment_text, comment_date)
+    if comment_id in recorded_comments:
+        return True
+    else:
+        recorded_comments.add(comment_id)
+        return False
+
+def limpiar_csv(filename):
+    with open(filename, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow(['Usuario', 'Comentario', 'Fecha'])
+
+def guardar_comentarios_csv(comentarios, filename):
+    with open(filename, mode='a', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        for comentario in comentarios:
+            writer.writerow(comentario)
+
+def leer_comentarios_csv(filename):
+    comentarios = []
+    if os.path.isfile(filename):
+        with open(filename, mode='r', newline='', encoding='utf-8') as file:
+            reader = csv.reader(file)
+            next(reader)  # Saltar el encabezado
+            for row in reader:
+                comentarios.append(tuple(row))
+    return comentarios
+
+def Extraer_Comentarios(driver, tweet_url, minero, id_url, filename='comentarios.csv'):
     validar_url(tweet_url, minero)
 
     try:
         driver.get(tweet_url)
-        time.sleep(2)  # Esperar a que la página del tweet se cargue completamente
+        time.sleep(2)
     except Exception as e:
         print(f"Error al navegar a la URL del tweet: {e}")
         driver.quit()
         exit()
 
-    # Intentar hacer clic en el botón "Mostrar más comentarios" varias veces
-    while True:
-        try:
-            show_more_button = driver.find_element(By.XPATH, '//button[@role="button" and .//span[contains(text(), "Mostrar más respuestas")]]')
-            driver.execute_script("arguments[0].click();", show_more_button)
-            time.sleep(3)  # Esperar a que se carguen los comentarios adicionales
-        except NoSuchElementException:
-            break
-
     body = driver.find_element(By.TAG_NAME, 'body')
-    for _ in range(40):  # Ajusta el rango según la cantidad de comentarios
+    recorded_comments = set()
+    comment_count = 0
+
+    limpiar_csv(filename)
+    previous_comment_count = -1
+    no_change_attempts = 0
+
+    while no_change_attempts < 3:
         body.send_keys(Keys.PAGE_DOWN)
         time.sleep(1)
 
-    # Extraer los comentarios
-    try:
-        users = driver.find_elements(By.CSS_SELECTOR, 'div[data-testid="User-Name"]')
-        comments = driver.find_elements(By.CSS_SELECTOR, 'div[data-testid="tweetText"]')
-        dates = driver.find_elements(By.CSS_SELECTOR, 'a > time')
+        try:
+            users = driver.find_elements(By.CSS_SELECTOR, 'div[data-testid="User-Name"]')
+            comments = driver.find_elements(By.CSS_SELECTOR, 'div[data-testid="tweetText"]')
+            dates = driver.find_elements(By.CSS_SELECTOR, 'a > time')
 
-        if not comments:
-            print("No se encontraron comentarios con el selector actual.")
-        else:
-            extracted_comments = []
-            for user, comment, date in zip(users, comments, dates):
-                user_name = user.find_element(By.CSS_SELECTOR, 'span.css-1jxf684').text.encode('utf-8', errors='replace').decode('utf-8')
-                comment_text = comment.text.encode('utf-8', errors='replace').decode('utf-8')
-                
-                # Saltar comentarios vacíos
-                if not comment_text.strip():
-                    continue
-
-                extracted_comments.append((user_name, comment_text, date.get_attribute('datetime')))
-
-            # Filtrar comentarios en español
-            spanish_comments = filter_spanish_comments([comment for _, comment, _ in extracted_comments])
-            
-            # Insertar comentarios en la base de datos
-            for user_name, comment_text, date in extracted_comments:
-                if comment_text in spanish_comments:
-                    comment_date = datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.%fZ').strftime('%Y-%m-%d %H:%M:%S')
+            if not comments:
+                print("No se encontraron comentarios con el selector actual.")
+            else:
+                nuevos_comentarios = []
+                for user, comment, date in zip(users, comments, dates):
+                    user_name = clean_text(user.find_element(By.CSS_SELECTOR, 'span.css-1jxf684').text.replace('@', ''))
+                    comment_text = clean_text(comment.text)
+                    comment_date = datetime.strptime(date.get_attribute('datetime'), '%Y-%m-%dT%H:%M:%S.%fZ').strftime('%Y-%m-%d %H:%M:%S')
                     fecha_add = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-                    data = {  # Creacion de diccionario data
-                        "usuario": user_name,
-                        "comentario": comment_text,
-                        "fecha_com": comment_date,
-                        "minero": minero,
-                        "fecha_add": fecha_add,
-                        'id_url': id_url_paracom
-                    }
-                    response = supabase.table("Comentarios").insert(data).execute()
-                    print(f"Insertado: {response.data}")
-    except Exception as e:
-        print(f"Error al extraer comentarios: {e}")
+                    if not es_duplicado(user_name, comment_text, comment_date, recorded_comments) and comment_text:
+                        comment_count += 1
+                        nuevos_comentarios.append((user_name, comment_text, comment_date))
+
+                guardar_comentarios_csv(nuevos_comentarios, filename)
+
+                if comment_count == previous_comment_count:
+                    no_change_attempts += 1
+                else:
+                    no_change_attempts = 0
+                previous_comment_count = comment_count
+
+        except Exception as e:
+            print(f"Error al extraer comentarios: {e}")
+            no_change_attempts += 1
+
+    print(f"Cantidad total de comentarios registrados: {comment_count}")

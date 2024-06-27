@@ -8,8 +8,8 @@ def create_gui():
     root = tk.Tk()
     root.title("Twitter Scraper")
 
-    tk.Label(root, text="Links de los Posts de Twitter (uno por línea):").grid(row=0, column=0, padx=10, pady=10)
-    url_text = tk.Text(root, height=10, width=50)
+    tk.Label(root, text="Links de Twitter (uno por línea):").grid(row=0, column=0, padx=10, pady=10)
+    url_text = tk.Text(root, width=50, height=10)
     url_text.grid(row=0, column=1, padx=10, pady=10)
 
     tk.Label(root, text="Minero:").grid(row=1, column=0, padx=10, pady=10)
@@ -24,7 +24,7 @@ def create_gui():
 
     def on_scrape_button_click(url_text, minero_entry, scrape_button, loading_label):
         tweet_urls = url_text.get("1.0", tk.END).strip().split('\n')
-        minero = minero_entry.get().strip()
+        minero = 'Jose Escobar'
         if not tweet_urls or not minero:
             messagebox.showwarning("Advertencia", "Por favor, ingrese los Links y el nombre del Minero")
         else:
@@ -34,7 +34,9 @@ def create_gui():
 
     def run_scraping(tweet_urls, minero, scrape_button, loading_label):
         try:
-            start_scraping(tweet_urls, minero)
+            for tweet_url in tweet_urls:
+                if tweet_url.strip():  # Verificar si la URL no está vacía
+                    start_scraping(tweet_url.strip(), minero)
             messagebox.showinfo("Éxito", "El scraping se ha completado correctamente.")
         except Exception as e:
             messagebox.showerror("Error", str(e))
@@ -46,4 +48,3 @@ def create_gui():
 
 if __name__ == "__main__":
     create_gui()
-
