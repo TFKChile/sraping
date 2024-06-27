@@ -24,7 +24,7 @@ def create_gui():
 
     def on_scrape_button_click(url_text, minero_entry, scrape_button, loading_label):
         tweet_urls = url_text.get("1.0", tk.END).strip().split('\n')
-        minero = 'Jose Escobar'
+        minero = minero_entry.get().strip()
         if not tweet_urls or not minero:
             messagebox.showwarning("Advertencia", "Por favor, ingrese los Links y el nombre del Minero")
         else:
